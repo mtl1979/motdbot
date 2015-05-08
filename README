@@ -1,0 +1,51 @@
+This is a little MUSCLE bot that can be used to add a Message of the Day
+to your MUSCLE server that BeShare clients will see.
+
+To compile:
+   1. Download the MUSCLE archive from BeBits (v2.30 or higher), and make
+      sure the muscle folder appears in the same folder that the motdbot
+      folder is.
+ 
+   2. cd into this folder and type make
+
+To run:
+   1. Make sure muscled is running on your machine.
+
+   2. cd into this folder and type ./motdbot
+
+To change the text file:
+
+   edit motd.txt with any text editor
+
+To report problems:
+
+   email me (Jeremy Friesner) at jaf@lcsaudio.com
+   
+History
+-------
+
+v1.06 6/9/03
+    * Update the Makefile to link correctly with
+      MUSCLE v2.40
+
+v1.05 3/03/03
+    - motdbot now tries to auto-reconnect when 
+      it loses its connection to the muscle server.
+    * Updated the code to compile against MUSCLE v2.30
+    
+v1.04 12/15/02
+    * Updated the code to compile against MUSCLE v2.00
+
+v1.03 12/15/01
+    * Updated the code to compile against MUSCLE v1.93
+
+v1.02 9/07/01
+    * Fixed the Makefile to reflect updated MUSCLE directory structure
+    * Fixed an infinite loop bug that would occur when the connection broke
+    * Updated the docs
+
+v1.01 2/17/01 
+    * Fixed a file descriptor leak (motdbot wasn't calling fclose())
+
+v1.00 Initial Release
+
