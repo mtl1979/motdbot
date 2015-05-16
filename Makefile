@@ -2,10 +2,10 @@
 CXXFLAGS   += -Imuscle -DMUSCLE_SINGLE_THREAD_ONLY
 
 # compilation flags that are specific to the gcc compiler (hard-coded)
-GCCFLAGS    = -fno-exceptions -DMUSCLE_NO_EXCEPTIONS -Wall -W -Wno-multichar
+GCCFLAGS    = -g -fno-exceptions -DMUSCLE_NO_EXCEPTIONS -Wall -W -Wno-multichar
 
 # flags to include when compiling the optimized version (with 'make optimized')
-CCOPTFLAGS  = -g
+CCOPTFLAGS  =
 
 # flags to include when linking (set per operating system, below)
 LFLAGS      =
@@ -24,7 +24,7 @@ VPATH = muscle/message muscle/iogateway muscle/reflector muscle/regex muscle/uti
 
 # if the OS type variable is unset, try to set it using the uname shell command
 ifeq ($(OSTYPE),)
-  OSTYPE = $(shell uname)
+  OSTYPE = $(strip $(shell uname))
 endif
 
 # IRIX may report itself as IRIX or as IRIX64.  They are both the same to us.
@@ -48,33 +48,60 @@ ifeq ($(OSTYPE),beos)
   endif # END ifeq ($(BE_HOST_CPU),ppc)
 else # not beos
   CXXFLAGS += $(GCCFLAGS) $(CCOPTFLAGS)
-  ifeq ($(OSTYPE),freebsd4.0)
-    CXXFLAGS += -I/usr/include/machine
-  else # not freebsd4.0
-    ifeq ($(OSTYPE),darwin)
-      CXX = c++
-      CXXFLAGS += -I/usr/include/machine
-    else # not darwin
-      ifeq ($(OSTYPE),IRIX)
-        CXXFLAGS += -DSGI -DMIPS
-        ifneq (,$(findstring g++,$(CXX))) # if we are using SGI's CC compiler, we gotta change a few things
-          CXX = CC
-          CCFLAGS = -g2 -n32 -LANG:std -woff 1110,1174,1552,1460,3303
-          LFLAGS  = -g2 -n32
-          CXXFLAGS += -DNEW_H_NOT_AVAILABLE
-        endif # END ifneq (,$(findstring g++,$(CXX)))
-      endif # END ifeq ($(OSTYPE),IRIX)
-    endif # END ifeq ($(OSTYPE),darwin)
-  endif # END ifeq ($(OSTYPE),freebsd4.0)
-endif #END ifeq ($(OSTYPE),beos)
+endif
 
+ifeq ($(OSTYPE),freebsd4.0)
+  CXXFLAGS += -I/usr/include/machine
+endif
+
+ifeq ($(OSTYPE),darwin)
+  CXX = c++
+  CXXFLAGS += -I/usr/include/machine
+endif
+
+ifeq ($(OSTYPE),IRIX)
+  CXXFLAGS += -DSGI -DMIPS
+  ifneq (,$(findstring g++,$(CXX))) # if we are using SGI's CC compiler, we gotta change a few things
+    CXX = CC
+    CCFLAGS = -g2 -n32 -LANG:std -woff 1110,1174,1552,1460,3303
+    LFLAGS  = -g2 -n32
+    CXXFLAGS += -DNEW_H_NOT_AVAILABLE
+  endif # END ifneq (,$(findstring g++,$(CXX)))
+endif
+
+ifneq (,$(findstring MINGW32,$(OSTYPE)))
+  OSTYPE=MINGW
+endif
+
+ifneq (,$(findstring MINGW64,$(OSTYPE)))
+  OSTYPE=MINGW
+endif
+
+ifeq ($(OSTYPE),MINGW)
+  CC = gcc
+  ARCH = $(shell gcc -dumpmachine | sed 's/-.*//g')
+  ifeq ($(ARCH),x86_64)
+    CXXFLAGS += -m64 -D__MINGW64__ -I/mingw64/x86_64-w64-mingw32/include
+    LFLAGS = -L/mingw64/x86_64-w64-mingw32/lib -L/lib
+    LIBS = -lregex -lws2_32 -lwinmm -liphlpapi -lmingwex -lmsvcrt
+  else
+    OBJFILES += regcomp.o regerror.o regexec.o regfree.o
+    VPATH += muscle/regex/regex
+    CXXFLAGS += -m32 -D__MINGW32__ -DMUSCLE_AVOID_IPV6 -D_WIN32_WINNT=0x0501 -I/mingw32/i686-w64-mingw32/include
+    CFLAGS += -Imuscle/regex/regex
+    LFLAGS = -L/mingw32/i686-w64-mingw32/lib -L/lib
+    LIBS = -lws2_32 -lwinmm -liphlpapi -lmingwex -lmsvcrt
+  endif
+endif
+
+# Makes all the programs that can be made using just cross-platform code
 all : $(EXECUTABLES)
 
 optimized : CCOPTFLAGS = -O3
 optimized : all
 
 motdbot : $(OBJFILES)
-	$(CXX) $(LIBS) $(LFLAGS) -o $@ $^
+	$(CXX) $(LFLAGS) -o $@ $^ $(LIBS)
 
 clean :
 	rm -f *.o *.xSYM $(EXECUTABLES)
